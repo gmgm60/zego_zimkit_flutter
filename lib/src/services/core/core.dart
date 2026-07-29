@@ -43,6 +43,7 @@ class ZIMKitCore
   String appSign = '';
   String appSecret = '';
   bool useToken = false;
+  String? cachedToken;
 
   bool isInited = false;
   ZIMUserFullInfo? currentUser;

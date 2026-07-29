@@ -5,6 +5,7 @@ extension ZIMKitCoreUser on ZIMKitCore {
     required String id,
     String name = '',
     String avatarUrl = '',
+    String token = '',
   }) async {
     if (!isInited) {
       ZIMKitLogger.logInfo('is not inited.');
@@ -32,8 +33,9 @@ extension ZIMKitCoreUser on ZIMKitCore {
     );
 
     ZIMKitLogger.logInfo('ready to login..');
+    cachedToken = token.isNotEmpty ? token : null;
     final connectResult =
-        await ZegoUIKitSignalingPlugin().connectUser(id: id, name: name);
+        await ZegoUIKitSignalingPlugin().connectUser(id: id, name: name, token: token);
 
     if (connectResult.error == null) {
       ZIMKitLogger.logInfo('login success');
@@ -74,14 +76,16 @@ extension ZIMKitCoreUser on ZIMKitCore {
 
   Future<int> checkNeedReloginOrNot(Exception error) async {
     if (error is! PlatformException) return -1;
-    if (currentUser != null) return -1;
+    if (currentUser == null) return -1;
     final errorCode = int.tryParse(error.code) ?? -2;
     if (errorCode != ZIMErrorCode.networkModuleUserIsNotLogged) {
       return -1;
     }
     ZIMKitLogger.logInfo('try auto relogin.');
     return connectUser(
-        id: currentUser!.baseInfo.userID, name: currentUser!.baseInfo.userName);
+        id: currentUser!.baseInfo.userID,
+        name: currentUser!.baseInfo.userName,
+        token: cachedToken ?? '');
   }
 
   // TODO 优化，如果短时间内来了大量请求，合并请求再调sdk
