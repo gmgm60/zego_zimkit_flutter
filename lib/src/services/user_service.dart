@@ -36,4 +36,9 @@ mixin ZIMKitUserService {
       getConnectionStateChangedEventStream() {
     return ZIMKitCore.instance.getConnectionStateChangedEventStream();
   }
+
+  Stream<ZegoSignalingPluginTokenWillExpireEvent>
+      getTokenWillExpireEventStream() {
+    return ZIMKitCore.instance.getTokenWillExpireEventStream();
+  }
 }
