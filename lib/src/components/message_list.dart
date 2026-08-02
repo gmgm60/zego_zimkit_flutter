@@ -15,6 +15,7 @@ class ZIMKitMessageListView extends StatefulWidget {
     Key? key,
     required this.conversationID,
     required this.scrollController,
+    this.padding,
     this.conversationType = ZIMConversationType.peer,
     this.onPressed,
     this.itemBuilder,
@@ -32,6 +33,12 @@ class ZIMKitMessageListView extends StatefulWidget {
   final ZIMConversationType conversationType;
 
   final ScrollController scrollController;
+
+  /// Padding forwarded to the inner [ListView.builder], so callers can keep
+  /// the first/last messages clear of floating overlays (e.g. a frosted header
+  /// and a composer pinned above the list). Defaults to `null` (no padding),
+  /// preserving the original behaviour.
+  final EdgeInsetsGeometry? padding;
 
   final void Function(
     BuildContext context,
@@ -230,6 +237,7 @@ class _ZIMKitMessageListViewState extends State<ZIMKitMessageListView> {
                 const SizedBox.shrink(),
           ),
           ListView.builder(
+            padding: widget.padding,
             cacheExtent: constraints.maxHeight * 3,
             controller: widget.scrollController,
             itemCount: messageList.length,
