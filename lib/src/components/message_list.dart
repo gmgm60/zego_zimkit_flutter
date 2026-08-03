@@ -16,6 +16,7 @@ class ZIMKitMessageListView extends StatefulWidget {
     required this.conversationID,
     required this.scrollController,
     this.padding,
+    this.header,
     this.conversationType = ZIMConversationType.peer,
     this.onPressed,
     this.itemBuilder,
@@ -39,6 +40,11 @@ class ZIMKitMessageListView extends StatefulWidget {
   /// and a composer pinned above the list). Defaults to `null` (no padding),
   /// preserving the original behaviour.
   final EdgeInsetsGeometry? padding;
+
+  /// Optional widget rendered as the first (top) item of the message list, so
+  /// it scrolls with the conversation content. `null` preserves the original
+  /// behaviour (no header).
+  final Widget? header;
 
   final void Function(
     BuildContext context,
@@ -224,6 +230,7 @@ class _ZIMKitMessageListViewState extends State<ZIMKitMessageListView> {
           : DateTime.fromMillisecondsSinceEpoch(
               messageList[0].value.info.timestamp);
       DateTime nowDateTime = DateTime.now();
+      final hasHeader = widget.header != null;
 
       return Stack(
         children: [
@@ -240,10 +247,14 @@ class _ZIMKitMessageListViewState extends State<ZIMKitMessageListView> {
             padding: widget.padding,
             cacheExtent: constraints.maxHeight * 3,
             controller: widget.scrollController,
-            itemCount: messageList.length,
+            itemCount: messageList.length + (hasHeader ? 1 : 0),
             dragStartBehavior: DragStartBehavior.down,
             itemBuilder: (context, index) {
-              final messageNotifier = messageList[index];
+              if (hasHeader && index == 0) {
+                return widget.header!;
+              }
+              final messageIndex = hasHeader ? index - 1 : index;
+              final messageNotifier = messageList[messageIndex];
 
               return ValueListenableBuilder(
                 valueListenable: messageNotifier,
@@ -269,7 +280,7 @@ class _ZIMKitMessageListViewState extends State<ZIMKitMessageListView> {
                           DateFormat('HH:mm').format(currentDatetime);
                     }
                   } else if (!isSameDayAsPrevious ||
-                      0 == index ||
+                      0 == messageIndex ||
                       isFiveMinutesBefore) {
                     if (isLastWeek) {
                       formattedDateTime = DateFormat('yyyy/MM/dd HH:mm')
