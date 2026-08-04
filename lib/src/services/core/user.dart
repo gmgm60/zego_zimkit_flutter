@@ -18,6 +18,35 @@ extension ZIMKitCoreUser on ZIMKitCore {
       'currentUser user(id:${currentUser?.baseInfo.userID}, name:${currentUser?.baseInfo.userName}), ',
     );
 
+    // Same-user reconnect: silently logout + login WITHOUT clearing
+    // ZIMKit's in-memory notifiers. Prevents the UI from flashing empty
+    // during reconnection. The local SQLite DB is untouched.
+    if (currentUser != null && currentUser!.baseInfo.userID == id) {
+      ZIMKitLogger.logInfo('same user, silent reconnect (no clear)');
+
+      await ZegoUIKitSignalingPlugin().disconnectUser();
+
+      // ZIM.logout() is fire-and-forget at the platform channel level.
+      // The signaling plugin returns immediately for 'reconnecting' state.
+      // Give the native SDK time to process the logout before login.
+      await Future.delayed(const Duration(milliseconds: 500));
+
+      cachedToken = token.isNotEmpty ? token : null;
+      final result = await ZegoUIKitSignalingPlugin().connectUser(
+        id: id,
+        name: name,
+        token: token,
+      );
+
+      if (result.error == null) {
+        ZIMKitLogger.logInfo('silent reconnect success');
+        if (avatarUrl.isNotEmpty) await updateUserInfo(avatarUrl: avatarUrl);
+        return 0;
+      }
+      ZIMKitLogger.logWarn('silent reconnect failed: ${result.error}');
+      return int.parse(result.error!.code);
+    }
+
     if (currentUser != null) {
       ZIMKitLogger.logInfo('has login, auto logout');
       await disconnectUser();
@@ -58,11 +87,10 @@ extension ZIMKitCoreUser on ZIMKitCore {
   Future<void> disconnectUser() async {
     ZIMKitLogger.logInfo('logout.');
     clear();
-    ZegoUIKitSignalingPlugin().disconnectUser().then((result) {
-      if (result.timeout) {
-        ZIMKitLogger.logWarn('logout timeout');
-      }
-    });
+    final result = await ZegoUIKitSignalingPlugin().disconnectUser();
+    if (result.timeout) {
+      ZIMKitLogger.logWarn('logout timeout');
+    }
   }
 
   Future<void> waitForLoginOrNot() async {
