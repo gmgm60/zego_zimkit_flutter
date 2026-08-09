@@ -17,6 +17,7 @@ class ZIMKitMessageListView extends StatefulWidget {
     required this.scrollController,
     this.padding,
     this.header,
+    this.footer,
     this.conversationType = ZIMConversationType.peer,
     this.onPressed,
     this.itemBuilder,
@@ -45,6 +46,12 @@ class ZIMKitMessageListView extends StatefulWidget {
   /// it scrolls with the conversation content. `null` preserves the original
   /// behaviour (no header).
   final Widget? header;
+
+  /// Optional widget rendered as the last (bottom) item of the message list,
+  /// so it scrolls with the conversation content (e.g. a typing indicator that
+  /// appears beneath the last message). `null` preserves the original
+  /// behaviour (no footer).
+  final Widget? footer;
 
   final void Function(
     BuildContext context,
@@ -231,6 +238,9 @@ class _ZIMKitMessageListViewState extends State<ZIMKitMessageListView> {
               messageList[0].value.info.timestamp);
       DateTime nowDateTime = DateTime.now();
       final hasHeader = widget.header != null;
+      final hasFooter = widget.footer != null;
+      final headerOffset = hasHeader ? 1 : 0;
+      final footerIndex = headerOffset + messageList.length;
 
       return Stack(
         children: [
@@ -247,13 +257,17 @@ class _ZIMKitMessageListViewState extends State<ZIMKitMessageListView> {
             padding: widget.padding,
             cacheExtent: constraints.maxHeight * 3,
             controller: widget.scrollController,
-            itemCount: messageList.length + (hasHeader ? 1 : 0),
+            itemCount:
+                messageList.length + (hasHeader ? 1 : 0) + (hasFooter ? 1 : 0),
             dragStartBehavior: DragStartBehavior.down,
             itemBuilder: (context, index) {
               if (hasHeader && index == 0) {
                 return widget.header!;
               }
-              final messageIndex = hasHeader ? index - 1 : index;
+              if (hasFooter && index == footerIndex) {
+                return widget.footer!;
+              }
+              final messageIndex = index - headerOffset;
               final messageNotifier = messageList[messageIndex];
 
               return ValueListenableBuilder(
