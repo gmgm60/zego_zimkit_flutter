@@ -8,7 +8,7 @@ class ListNotifier<T> extends ValueNotifier<List<T>> {
   /// Creates a ListNotifier instance
   ///
   /// [value] The initial list value
-  ListNotifier(List<T> value) : super(value);
+  ListNotifier(super.value);
 
   int get length => value.length;
   bool get isEmpty => value.isEmpty;
@@ -25,8 +25,11 @@ class ListNotifier<T> extends ValueNotifier<List<T>> {
     return changed;
   }
 
-  void addAll(Iterable<T> iterable,
-      {bool Function(T element)? add, bool notify = true}) {
+  void addAll(
+    Iterable<T> iterable, {
+    bool Function(T element)? add,
+    bool notify = true,
+  }) {
     if (add != null) {
       for (final element in iterable) {
         if (add(element)) {
@@ -81,8 +84,11 @@ class ListNotifier<T> extends ValueNotifier<List<T>> {
     }
   }
 
-  bool moveItemTo(int targetIndex, bool Function(T) test,
-      {bool notify = true}) {
+  bool moveItemTo(
+    int targetIndex,
+    bool Function(T) test, {
+    bool notify = true,
+  }) {
     final index = value.indexWhere(test);
     bool valueChanged = false;
     if ((index != -1) && (index != targetIndex)) {
@@ -110,7 +116,7 @@ class MapNotifier<K, V> extends ValueNotifier<Map<K, V>> {
   /// Creates a MapNotifier instance
   ///
   /// [value] The initial map value
-  MapNotifier(Map<K, V> value) : super(value);
+  MapNotifier(super.value);
 
   int get length => value.length;
   bool get isEmpty => value.isEmpty;

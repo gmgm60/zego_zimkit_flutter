@@ -51,7 +51,7 @@ class ZIMKitCore
 
   final Map<String, AsyncCache<ZIMGroupFullInfo?>> _queryGroupCache = {};
   final Map<String, AsyncCache<ZIMGroupMemberInfo?>>
-      _queryGroupMemberInfoCache = {};
+  _queryGroupMemberInfoCache = {};
   final Map<int, AsyncCache<ZIMUserFullInfo>> _queryUserCache = {};
 
   Completer? loginCompleter;
@@ -75,7 +75,7 @@ class ZIMKitCore
   final onGroupMemberInfoUpdatedEventController =
       StreamController<ZIMKitEventGroupMemberInfoUpdated>.broadcast();
 
-  String get version => '1.19.9';
+  String get version => '1.20.1';
 
   // API
   Future<String> getVersion() async {
@@ -102,9 +102,7 @@ class ZIMKitCore
     /// otherwise maybe can not receive notificationClick event
     initEventHandler();
 
-    await initOfflineMessage(
-      notificationConfig: notificationConfig,
-    );
+    await initOfflineMessage(notificationConfig: notificationConfig);
 
     this.appID = appID;
     this.appSign = appSign;
@@ -160,7 +158,7 @@ class ZIMKitCore
   }
 
   Stream<ZegoSignalingPluginTokenWillExpireEvent>
-      getTokenWillExpireEventStream() {
+  getTokenWillExpireEventStream() {
     return ZegoUIKitSignalingPlugin().getTokenWillExpireEventStream();
   }
 }

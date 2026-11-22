@@ -56,9 +56,9 @@ extension ZIMKitCoreUser on ZIMKitCore {
       baseInfo: ZIMUserInfo(
         userID: id,
         userName: name.isNotEmpty ? name : id,
+        userAvatarUrl: '',
+        userExtendedData: '',
       ),
-      userAvatarUrl: '',
-      extendedData: '',
     );
 
     ZIMKitLogger.logInfo('ready to login..');
@@ -130,71 +130,84 @@ extension ZIMKitCoreUser on ZIMKitCore {
 
     return _queryUserCache[queryHash]!.fetch(() async {
       ZIMKitLogger.logInfo(
-          'queryUser, id:$id, isQueryFromServer:$isQueryFromServer');
+        'queryUser, id:$id, isQueryFromServer:$isQueryFromServer',
+      );
       final config = ZIMUserInfoQueryConfig()
         ..isQueryFromServer = isQueryFromServer;
-      return ZIM.getInstance()!.queryUsersInfo(
-        [id],
-        config,
-      ).then((ZIMUsersInfoQueriedResult result) {
-        return result.userList.first;
-      }).catchError((error) {
-        Timer.run(() => _queryUserCache[queryHash]?.invalidate());
+      return ZIM
+          .getInstance()!
+          .queryUsersInfo([id], config)
+          .then((ZIMUsersInfoQueriedResult result) {
+            return result.userList.first;
+          })
+          .catchError((error) {
+            Timer.run(() => _queryUserCache[queryHash]?.invalidate());
 
-        final errorCode = int.tryParse(error.code) ?? -2;
-        // qps limit
-        if (ZIMErrorCodeExtension.isFreqLimit(errorCode)) {
-          if (isQueryFromServer) {
-            ZIMKitLogger.logInfo('queryUser failed, retry queryUser from sdk');
-            return queryUser(id, isQueryFromServer: false);
-          } else {
-            ZIMKitLogger.logInfo(
-                'queryUser from sdk failed, retry queryUser from server later');
-            return Future.delayed(
-              Duration(milliseconds: Random().nextInt(5000)),
-              () => queryUser(id),
-            );
-          }
-        }
+            final errorCode = int.tryParse(error.code) ?? -2;
+            // qps limit
+            if (ZIMErrorCodeExtension.isFreqLimit(errorCode)) {
+              if (isQueryFromServer) {
+                ZIMKitLogger.logInfo(
+                  'queryUser failed, retry queryUser from sdk',
+                );
+                return queryUser(id, isQueryFromServer: false);
+              } else {
+                ZIMKitLogger.logInfo(
+                  'queryUser from sdk failed, retry queryUser from server later',
+                );
+                return Future.delayed(
+                  Duration(milliseconds: Random().nextInt(5000)),
+                  () => queryUser(id),
+                );
+              }
+            }
 
-        return checkNeedReloginOrNot(error).then((retryCode) {
-          if (retryCode == 0) {
-            ZIMKitLogger.logInfo('re-login success, retry queryUser');
-            return queryUser(id);
-          } else {
-            ZIMKitLogger.logError('queryUser failed:$error');
-            throw error;
-          }
-        });
-      });
+            return checkNeedReloginOrNot(error).then((retryCode) {
+              if (retryCode == 0) {
+                ZIMKitLogger.logInfo('re-login success, retry queryUser');
+                return queryUser(id);
+              } else {
+                ZIMKitLogger.logError('queryUser failed:$error');
+                throw error;
+              }
+            });
+          });
     });
   }
 
   Future<int> updateUserInfo({String name = '', String avatarUrl = ''}) async {
     if (name.isNotEmpty) {
-      return ZIM.getInstance()!.updateUserName(name).then((value) {
-        ZIMKitLogger.logInfo('updateUserName success: $name');
-        currentUser?.baseInfo.userName = name;
+      return ZIM
+          .getInstance()!
+          .updateUserName(name)
+          .then((value) {
+            ZIMKitLogger.logInfo('updateUserName success: $name');
+            currentUser?.baseInfo.userName = name;
 
-        return 0;
-      }).catchError((error) {
-        ZIMKitLogger.logInfo('updateUserName failed:$error');
-        //  throw error;
-        return int.tryParse(error.code) ?? -2;
-      });
+            return 0;
+          })
+          .catchError((error) {
+            ZIMKitLogger.logInfo('updateUserName failed:$error');
+            //  throw error;
+            return int.tryParse(error.code) ?? -2;
+          });
     }
 
     if (avatarUrl.isNotEmpty) {
-      return ZIM.getInstance()!.updateUserAvatarUrl(avatarUrl).then((value) {
-        ZIMKitLogger.logInfo('updateUserAvatarUrl success: $avatarUrl');
-        currentUser?.userAvatarUrl = avatarUrl;
+      return ZIM
+          .getInstance()!
+          .updateUserAvatarUrl(avatarUrl)
+          .then((value) {
+            ZIMKitLogger.logInfo('updateUserAvatarUrl success: $avatarUrl');
+            currentUser?.baseInfo.userAvatarUrl = avatarUrl;
 
-        return 0;
-      }).catchError((error) {
-        ZIMKitLogger.logInfo('updateUserAvatarUrl failed:$error');
-        //  throw error;
-        return int.tryParse(error.code) ?? -2;
-      });
+            return 0;
+          })
+          .catchError((error) {
+            ZIMKitLogger.logInfo('updateUserAvatarUrl failed:$error');
+            //  throw error;
+            return int.tryParse(error.code) ?? -2;
+          });
     }
 
     return 0;
@@ -208,12 +221,12 @@ mixin ZIMKitCoreUserData {
 
 extension ZIMKitCoreUserEvent on ZIMKitCore {
   Stream<ZegoSignalingPluginConnectionStateChangedEvent>
-      getConnectionStateChangedEventStream() {
+  getConnectionStateChangedEventStream() {
     return ZegoUIKitSignalingPlugin().getConnectionStateChangedEventStream();
   }
 
   Stream<ZegoSignalingPluginTokenWillExpireEvent>
-      getTokenWillExpireEventStream() {
+  getTokenWillExpireEventStream() {
     return ZegoUIKitSignalingPlugin().getTokenWillExpireEventStream();
   }
 }

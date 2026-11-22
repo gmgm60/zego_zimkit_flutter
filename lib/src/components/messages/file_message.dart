@@ -4,18 +4,26 @@ import 'package:zego_zimkit/src/services/services.dart';
 
 class ZIMKitFileMessage extends StatelessWidget {
   const ZIMKitFileMessage({
-    Key? key,
+    super.key,
     required this.message,
     this.onPressed,
     this.onLongPress,
-  }) : super(key: key);
+  });
 
   final ZIMKitMessage message;
   final void Function(
-          BuildContext context, ZIMKitMessage message, Function defaultAction)?
-      onPressed;
-  final void Function(BuildContext context, LongPressStartDetails details,
-      ZIMKitMessage message, Function defaultAction)? onLongPress;
+    BuildContext context,
+    ZIMKitMessage message,
+    Function defaultAction,
+  )?
+  onPressed;
+  final void Function(
+    BuildContext context,
+    LongPressStartDetails details,
+    ZIMKitMessage message,
+    Function defaultAction,
+  )?
+  onLongPress;
 
   @override
   Widget build(BuildContext context) {
@@ -33,9 +41,9 @@ class ZIMKitFileMessage extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: Theme.of(context)
-                .primaryColor
-                .withValues(alpha: message.isMine ? 1 : 0.15),
+            color: Theme.of(
+              context,
+            ).primaryColor.withValues(alpha: message.isMine ? 1 : 0.15),
             borderRadius: BorderRadius.circular(8),
           ),
           child: Row(
@@ -49,16 +57,20 @@ class ZIMKitFileMessage extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: message.isNetworkUrl
                       ? [
-                          Text(message.fileContent!.fileName,
-                              style: textStyle,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis),
+                          Text(
+                            message.fileContent!.fileName,
+                            style: textStyle,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
                         ]
                       : [
-                          Text(message.fileContent!.fileName,
-                              style: textStyle,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis),
+                          Text(
+                            message.fileContent!.fileName,
+                            style: textStyle,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
                           Text(
                             fileSizeFormat(message.fileContent!.fileSize),
                             style: textStyle,
