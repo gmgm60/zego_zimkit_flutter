@@ -24,9 +24,8 @@ extension ZIMGroupMemberInfoExtension on ZIMGroupMemberInfo {
         'userAvatarUrl:$userAvatarUrl, '
         'memberNickname:$memberNickname, '
         'memberRole:$memberRole, '
-        'memberAvatarUrl:$memberAvatarUrl, '
         'muteExpiredTime:$muteExpiredTime, '
-        'groupEnterInfo:${groupEnterInfo?.toStringX()}, '
+        'groupEnterInfo:${groupEnterInfo.toStringX()}, '
         '}';
   }
 }
@@ -55,7 +54,7 @@ extension ZIMMessageExtend on ZIMMessage {
         ..sentStatus = sentStatus
         ..conversationType = conversationType
         ..timestamp = timestamp
-        ..conversationSeq = conversationSeq
+        ..conversationSeq = messageSeq
         ..orderKey = orderKey
         ..isUserInserted = isUserInserted
         ..receiptStatus = receiptStatus);
@@ -117,11 +116,6 @@ extension ZIMMessageExtend on ZIMMessage {
           ..videoFirstFrameWidth = zimMessage.videoFirstFrameWidth
           ..videoFirstFrameHeight = zimMessage.videoFirstFrameHeight);
         break;
-      case ZIMMessageType.system:
-        final zimMessage = this as ZIMSystemMessage;
-        ret.systemContent =
-            (ZIMKitMessageSystemContent()..info = zimMessage.message);
-        break;
       case ZIMMessageType.custom:
         final zimMessage = this as ZIMCustomMessage;
         ret.customContent = (ZIMKitMessageCustomContent()
@@ -136,8 +130,9 @@ extension ZIMMessageExtend on ZIMMessage {
     if (this is ZIMMediaMessage &&
         ret.isNetworkUrl &&
         ret.autoContent.fileDownloadUrl.isNotEmpty) {
-      ret.autoContent.fileName =
-          Uri.parse(ret.autoContent.fileDownloadUrl).pathSegments.last;
+      ret.autoContent.fileName = Uri.parse(
+        ret.autoContent.fileDownloadUrl,
+      ).pathSegments.last;
     }
 
     return ret;
@@ -189,14 +184,15 @@ extension ZIMKitMessageExtend on ZIMKitMessage {
       case ZIMMessageType.video:
       case ZIMMessageType.file:
       case ZIMMessageType.image:
-        zim = ZIMKitMessageUtils.mediaMessageFactory(
-          autoContent.fileLocalPath,
-          type,
-          audioDuration: audioContent?.audioDuration ?? 0,
-        )
-          ..fileDownloadUrl = autoContent.fileDownloadUrl
-          ..fileName = autoContent.fileName
-          ..fileSize = autoContent.fileSize;
+        zim =
+            ZIMKitMessageUtils.mediaMessageFactory(
+                autoContent.fileLocalPath,
+                type,
+                audioDuration: audioContent?.audioDuration ?? 0,
+              )
+              ..fileDownloadUrl = autoContent.fileDownloadUrl
+              ..fileName = autoContent.fileName
+              ..fileSize = autoContent.fileSize;
         break;
       case ZIMMessageType.custom:
         zim = ZIMCustomMessage(
@@ -208,7 +204,6 @@ extension ZIMKitMessageExtend on ZIMKitMessage {
       case ZIMMessageType.unknown:
       case ZIMMessageType.command:
       case ZIMMessageType.barrage:
-      case ZIMMessageType.system:
       case ZIMMessageType.revoke:
         break;
       case ZIMMessageType.tips:
@@ -237,16 +232,19 @@ extension ZIMImageMessageExtend on ZIMImageMessage {
 extension ZIMUserFullInfoExtend on ZIMUserFullInfo {
   Widget get icon {
     Widget placeholder = CircleAvatar(
-        child: Text(baseInfo.userName.isNotEmpty
+      child: Text(
+        baseInfo.userName.isNotEmpty
             ? baseInfo.userName[0]
-            : baseInfo.userID[0]));
+            : baseInfo.userID[0],
+      ),
+    );
 
     return baseInfo.userAvatarUrl.isEmpty
         ? placeholder
         : CachedNetworkImage(
             imageUrl: baseInfo.userAvatarUrl,
             fit: BoxFit.cover,
-            errorWidget: (context, _, __) => placeholder,
+            errorWidget: (context, _, _) => placeholder,
             placeholder: (context, url) => placeholder,
           );
   }
@@ -313,12 +311,15 @@ extension ZIMKitConversationExtend on ZIMKitConversation {
       case ZIMKitConversationType.peer:
         return ZIMKitAvatar(userID: id, name: name);
       case ZIMKitConversationType.room:
-        placeholder =
-            CircleAvatar(child: Text(name.isNotEmpty ? name[0] : id[0]));
+        placeholder = CircleAvatar(
+          child: Text(name.isNotEmpty ? name[0] : id[0]),
+        );
         break;
       case ZIMKitConversationType.group:
-        placeholder =
-            CircleAvatar(child: Text(name.isNotEmpty ? name[0] : id[0]));
+      case ZIMKitConversationType.communityChannel:
+        placeholder = CircleAvatar(
+          child: Text(name.isNotEmpty ? name[0] : id[0]),
+        );
         break;
       case ZIMKitConversationType.unknown:
         break;
@@ -329,7 +330,7 @@ extension ZIMKitConversationExtend on ZIMKitConversation {
         : CachedNetworkImage(
             imageUrl: avatarUrl,
             fit: BoxFit.cover,
-            errorWidget: (context, _, __) => placeholder,
+            errorWidget: (context, _, _) => placeholder,
             placeholder: (context, url) => placeholder,
           );
   }
@@ -394,8 +395,8 @@ extension ZIMGroupExtension on ZIMGroup {
       ..type = ZIMKitConversationType.group
       ..notificationStatus =
           (notificationStatus == ZIMGroupMessageNotificationStatus.notify
-              ? ZIMConversationNotificationStatus.notify
-              : ZIMConversationNotificationStatus.doNotDisturb);
+          ? ZIMConversationNotificationStatus.notify
+          : ZIMConversationNotificationStatus.doNotDisturb);
   }
 
   String get id => baseInfo.groupID;

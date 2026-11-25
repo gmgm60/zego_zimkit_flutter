@@ -12,7 +12,8 @@ extension ZIMKitCoreMessageMedia on ZIMKitCore {
   }) async {
     if (mediaPath.isEmpty || !File(mediaPath).existsSync()) {
       ZIMKitLogger.logWarn(
-          "sendMediaMessage: mediaPath is empty or file doesn't exits");
+        "sendMediaMessage: mediaPath is empty or file doesn't exits",
+      );
       return;
     }
     if (conversationID.isEmpty) {
@@ -42,54 +43,53 @@ extension ZIMKitCoreMessageMedia on ZIMKitCore {
       final pushConfig = ZIMPushConfig()
         ..resourcesID = ZegoZIMKitNotificationManager.instance.resourceID!
         ..title = ZIMKit().currentUser()?.baseInfo.userName ?? ''
-
         /// media only show [type] for offline message
         ..content = '[${messageType.name}]'
-        ..payload = const JsonEncoder().convert(
-          {
-            ZIMKitInvitationProtocolKey.operationType:
-                BackgroundMessageType.mediaMessage.text,
-            'id': conversationID,
-            'sender': {
-              'id': ZIMKit().currentUser()?.baseInfo.userID ?? '',
-              'name': ZIMKit().currentUser()?.baseInfo.userName ?? '',
-            },
-            'type': conversationType.index,
+        ..payload = const JsonEncoder().convert({
+          ZIMKitInvitationProtocolKey.operationType:
+              BackgroundMessageType.mediaMessage.text,
+          'id': conversationID,
+          'sender': {
+            'id': ZIMKit().currentUser()?.baseInfo.userID ?? '',
+            'name': ZIMKit().currentUser()?.baseInfo.userName ?? '',
           },
-        );
+          'type': conversationType.index,
+        });
       sendConfig.pushConfig = pushConfig;
     }
 
     final mediaMessagePath =
         // ignore: avoid_dynamic_calls
         kitMessage.autoContent.fileDownloadUrl.isNotEmpty
-            // ignore: avoid_dynamic_calls
-            ? kitMessage.autoContent.fileDownloadUrl
-            : mediaPath;
+        // ignore: avoid_dynamic_calls
+        ? kitMessage.autoContent.fileDownloadUrl
+        : mediaPath;
     ZIMKitLogger.logInfo('sendMediaMessage: $mediaMessagePath');
 
     // 3. call service
     late ZIMKitMessageNotifier kitMessageNotifier;
     await ZIM
         .getInstance()!
-        .sendMediaMessage(
-          kitMessage.zim as ZIMMediaMessage,
+        .sendMessage(
+          kitMessage.zim,
           conversationID,
           conversationType,
           sendConfig,
-          ZIMMediaMessageSendNotification(
+          ZIMMessageSendNotification(
             onMessageAttached: (zimMessage) {
-              ZIMKitLogger.logInfo('sendMediaMessage.onMessageAttached: '
-                  '${(zimMessage as ZIMMediaMessage).fileName}');
+              ZIMKitLogger.logInfo(
+                'sendMediaMessage.onMessageAttached: '
+                '${(zimMessage as ZIMMediaMessage).fileName}',
+              );
               kitMessageNotifier = db
                   .messages(conversationID, conversationType)
                   .onAttach(zimMessage);
             },
-            onMediaUploadingProgress:
-                (message, currentFileSize, totalFileSize) {
+            onMediaUploadingProgress: (message, currentFileSize, totalFileSize) {
               final zimMessage = message;
               ZIMKitLogger.logInfo(
-                  'onMediaUploadingProgress: ${zimMessage.fileName}, $currentFileSize/$totalFileSize');
+                'onMediaUploadingProgress: ${zimMessage.fileName}, $currentFileSize/$totalFileSize',
+              );
 
               kitMessageNotifier.value = (kitMessageNotifier.value.clone()
                 ..updateExtraInfo({
@@ -97,38 +97,40 @@ extension ZIMKitCoreMessageMedia on ZIMKitCore {
                     ZIMMediaFileType.originalFile.name: {
                       'currentFileSize': currentFileSize,
                       'totalFileSize': totalFileSize,
-                    }
-                  }
+                    },
+                  },
                 }));
             },
           ),
         )
         .then((result) {
-      ZIMKitLogger.logInfo('sendMediaMessage: success, $mediaPath}');
-      kitMessageNotifier.value = result.message.toKIT();
-      onMessageSent?.call(kitMessageNotifier.value);
-    }).catchError((error) {
-      kitMessageNotifier.value =
-          (kitMessageNotifier.value.clone()..sendFailed(error));
-      return checkNeedReloginOrNot(error).then((retryCode) {
-        if (retryCode == 0) {
-          ZIMKitLogger.logInfo('relogin success, retry sendMediaMessage');
-          sendMediaMessage(
-            conversationID,
-            conversationType,
-            mediaPath,
-            messageType,
-            preMessageSending: preMessageSending,
-            onMessageSent: onMessageSent,
-          );
-        } else {
-          ZIMKitLogger.logError(
-              'sendMediaMessage: failed, $mediaPath, error:$error');
+          ZIMKitLogger.logInfo('sendMediaMessage: success, $mediaPath}');
+          kitMessageNotifier.value = result.message.toKIT();
           onMessageSent?.call(kitMessageNotifier.value);
-          throw error;
-        }
-      });
-    });
+        })
+        .catchError((error) {
+          kitMessageNotifier.value = (kitMessageNotifier.value.clone()
+            ..sendFailed(error));
+          return checkNeedReloginOrNot(error).then((retryCode) {
+            if (retryCode == 0) {
+              ZIMKitLogger.logInfo('relogin success, retry sendMediaMessage');
+              sendMediaMessage(
+                conversationID,
+                conversationType,
+                mediaPath,
+                messageType,
+                preMessageSending: preMessageSending,
+                onMessageSent: onMessageSent,
+              );
+            } else {
+              ZIMKitLogger.logError(
+                'sendMediaMessage: failed, $mediaPath, error:$error',
+              );
+              onMessageSent?.call(kitMessageNotifier.value);
+              throw error;
+            }
+          });
+        });
   }
 
   // TODO use flutter cache manager.
@@ -140,95 +142,93 @@ extension ZIMKitCoreMessageMedia on ZIMKitCore {
         )
         .notifier
         .value
-        .firstWhere((element) =>
-            element.value.info.localMessageID ==
-            kitMessage.info.localMessageID);
+        .firstWhere(
+          (element) =>
+              element.value.info.localMessageID ==
+              kitMessage.info.localMessageID,
+        );
     _downloadMediaFile(kitMessageNotifier);
   }
 
   void _downloadMediaFile(ZIMKitMessageNotifier kitMessageNotifier) {
     if (kitMessageNotifier.value.zim is! ZIMMediaMessage) {
       ZIMKitLogger.logError(
-          'downloadMediaFile: ${kitMessageNotifier.value.zim.runtimeType} '
-          'is not ZIMMediaMessage');
+        'downloadMediaFile: ${kitMessageNotifier.value.zim.runtimeType} '
+        'is not ZIMMediaMessage',
+      );
       return;
     }
 
     if (kitMessageNotifier.value.isNetworkUrl) {
       ZIMKitLogger.logError(
-          'downloadMediaFile: ${kitMessageNotifier.value.zim.runtimeType} '
-          'is network url.');
+        'downloadMediaFile: ${kitMessageNotifier.value.zim.runtimeType} '
+        'is network url.',
+      );
       return;
     }
 
     final downloadTypes = <ZIMMediaFileType>[];
 
-    switch (kitMessageNotifier.value.zim.runtimeType) {
-      case ZIMVideoMessage:
-        if ((kitMessageNotifier.value.zim as ZIMVideoMessage)
-            .videoFirstFrameLocalPath
-            .isEmpty) {
-          downloadTypes.add(ZIMMediaFileType.videoFirstFrame);
-        }
-        if ((kitMessageNotifier.value.zim as ZIMMediaMessage)
-            .fileLocalPath
-            .isEmpty) {
-          downloadTypes.add(ZIMMediaFileType.originalFile);
-        }
-        break;
-      case ZIMImageMessage:
-        // just use flutter cache manager
-        break;
-      case ZIMAudioMessage:
-        if ((kitMessageNotifier.value.zim as ZIMMediaMessage)
-            .fileLocalPath
-            .isEmpty) {
-          downloadTypes.add(ZIMMediaFileType.originalFile);
-        }
-        break;
-      case ZIMFileMessage:
-        if ((kitMessageNotifier.value.zim as ZIMMediaMessage)
-            .fileLocalPath
-            .isEmpty) {
-          downloadTypes.add(ZIMMediaFileType.originalFile);
-        }
-        break;
-
-      default:
-        ZIMKitLogger.logError(
-            'not support download ${kitMessageNotifier.value.zim.runtimeType}');
-        return;
+    final zimMessage = kitMessageNotifier.value.zim;
+    if (zimMessage is ZIMVideoMessage) {
+      if (zimMessage.videoFirstFrameLocalPath.isEmpty) {
+        downloadTypes.add(ZIMMediaFileType.videoFirstFrame);
+      }
+      if ((zimMessage as ZIMMediaMessage).fileLocalPath.isEmpty) {
+        downloadTypes.add(ZIMMediaFileType.originalFile);
+      }
+    } else if (zimMessage is ZIMImageMessage) {
+      // just use flutter cache manager
+    } else if (zimMessage is ZIMAudioMessage) {
+      if ((zimMessage as ZIMMediaMessage).fileLocalPath.isEmpty) {
+        downloadTypes.add(ZIMMediaFileType.originalFile);
+      }
+    } else if (zimMessage is ZIMFileMessage) {
+      if ((zimMessage as ZIMMediaMessage).fileLocalPath.isEmpty) {
+        downloadTypes.add(ZIMMediaFileType.originalFile);
+      }
+    } else {
+      ZIMKitLogger.logError('not support download ${zimMessage.runtimeType}');
+      return;
     }
 
     for (final downloadType in downloadTypes) {
       final zimMediaMessage = kitMessageNotifier.value.zim as ZIMMediaMessage;
-      ZIMKitLogger.logInfo('downloadMediaFile: ${zimMediaMessage.fileName} - '
-          '${downloadType.name} start');
-      ZIM.getInstance()!.downloadMediaFile(
-        kitMessageNotifier.value.zim as ZIMMediaMessage,
-        downloadType,
-        ZIMMediaDownloadConfig(),
-        (ZIMMessage zimMessage, int currentFileSize, int totalFileSize) {
-          ZIMKitLogger.logInfo(
-              'downloadMediaFile: ${zimMediaMessage.fileName} - '
-              '${downloadType.name} $currentFileSize/$totalFileSize');
+      ZIMKitLogger.logInfo(
+        'downloadMediaFile: ${zimMediaMessage.fileName} - '
+        '${downloadType.name} start',
+      );
+      ZIM
+          .getInstance()!
+          .downloadMediaFile(
+            kitMessageNotifier.value.zim as ZIMMediaMessage,
+            downloadType,
+            ZIMMediaDownloadConfig(),
+            (ZIMMessage zimMessage, int currentFileSize, int totalFileSize) {
+              ZIMKitLogger.logInfo(
+                'downloadMediaFile: ${zimMediaMessage.fileName} - '
+                '${downloadType.name} $currentFileSize/$totalFileSize',
+              );
 
-          kitMessageNotifier.value = (kitMessageNotifier.value.clone()
-            ..updateExtraInfo({
-              'download': {
-                downloadType.name: {
-                  'currentFileSize': currentFileSize,
-                  'totalFileSize': totalFileSize,
-                }
-              }
-            }));
-        },
-      ).then((ZIMMediaDownloadedResult result) {
-        ZIMKitLogger.logInfo('downloadMediaFile: ${zimMediaMessage.fileName} - '
-            '${downloadType.name} success');
-        kitMessageNotifier.value = (kitMessageNotifier.value.clone()
-          ..downloadDone(downloadType, result.message));
-      });
+              kitMessageNotifier.value = (kitMessageNotifier.value.clone()
+                ..updateExtraInfo({
+                  'download': {
+                    downloadType.name: {
+                      'currentFileSize': currentFileSize,
+                      'totalFileSize': totalFileSize,
+                    },
+                  },
+                }));
+            },
+          )
+          .then((ZIMMediaDownloadedResult result) {
+            ZIMKitLogger.logInfo(
+              'downloadMediaFile: ${zimMediaMessage.fileName} - '
+              '${downloadType.name} success',
+            );
+            kitMessageNotifier.value = (kitMessageNotifier.value.clone()
+              ..downloadDone(downloadType, result.message));
+          });
     }
   }
 

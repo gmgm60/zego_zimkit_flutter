@@ -5,7 +5,7 @@ import 'package:zego_zim/zego_zim.dart';
 import 'package:zego_zimkit/src/services/services.dart';
 
 class ZIMKitMessageStatusDot extends StatelessWidget {
-  const ZIMKitMessageStatusDot(this.message, {Key? key}) : super(key: key);
+  const ZIMKitMessageStatusDot(this.message, {super.key});
   final ZIMKitMessage message;
 
   Color dotColor(BuildContext context, ZIMMessageSentStatus status) {
@@ -13,11 +13,11 @@ class ZIMKitMessageStatusDot extends StatelessWidget {
       case ZIMMessageSentStatus.failed:
         return Theme.of(context).colorScheme.error;
       case ZIMMessageSentStatus.sending:
-        return Theme.of(context).textTheme.bodyLarge!.color!.withValues(alpha: 0.1);
+        return Theme.of(
+          context,
+        ).textTheme.bodyLarge!.color!.withValues(alpha: 0.1);
       case ZIMMessageSentStatus.success:
         return Theme.of(context).primaryColor;
-      default:
-        return Colors.transparent;
     }
   }
 
